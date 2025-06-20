@@ -54,7 +54,7 @@ public class ContactDao {
      * Получает список контактов для указанной страницы и с учетом поискового запроса.
      * @param pageNumber Номер страницы (начиная с 0)
      * @param pageSize Размер страницы
-     * @param searchTerm Строка для поиска по имени (может быть null или пустой)
+     * @param searchTerm Строка для поиска по имени, фамилии, телефону или email (может быть null или пустой)
      * @return Список контактов
      * @throws SQLException
      */
@@ -64,8 +64,15 @@ public class ContactDao {
         List<Object> params = new ArrayList<>();
 
         if (searchTerm != null && !searchTerm.trim().isEmpty()) {
-            sqlBuilder.append("WHERE lower(firstName) LIKE lower(?) "); // Поиск без учета регистра
-            params.add("%" + searchTerm.trim() + "%");
+            String term = "%" + searchTerm.trim().toLowerCase() + "%";
+            sqlBuilder.append("WHERE (lower(firstName) LIKE ? OR ");
+            sqlBuilder.append("lower(lastName) LIKE ? OR ");
+            sqlBuilder.append("lower(phoneNumber) LIKE ? OR ");
+            sqlBuilder.append("lower(email) LIKE ?) ");
+            params.add(term);
+            params.add(term);
+            params.add(term);
+            params.add(term);
         }
 
         sqlBuilder.append("ORDER BY firstName, lastName LIMIT ? OFFSET ?");
@@ -89,7 +96,7 @@ public class ContactDao {
 
     /**
      * Получает общее количество контактов с учетом поискового запроса.
-     * @param searchTerm Строка для поиска по имени (может быть null или пустой)
+     * @param searchTerm Строка для поиска по имени, фамилии, телефону или email (может быть null или пустой)
      * @return Общее количество контактов
      * @throws SQLException
      */
@@ -98,8 +105,15 @@ public class ContactDao {
         List<Object> params = new ArrayList<>();
 
         if (searchTerm != null && !searchTerm.trim().isEmpty()) {
-            sqlBuilder.append("WHERE lower(firstName) LIKE lower(?)");
-            params.add("%" + searchTerm.trim() + "%");
+            String term = "%" + searchTerm.trim().toLowerCase() + "%";
+            sqlBuilder.append("WHERE (lower(firstName) LIKE ? OR ");
+            sqlBuilder.append("lower(lastName) LIKE ? OR ");
+            sqlBuilder.append("lower(phoneNumber) LIKE ? OR ");
+            sqlBuilder.append("lower(email) LIKE ?) ");
+            params.add(term);
+            params.add(term);
+            params.add(term);
+            params.add(term);
         }
 
         try (Connection conn = DatabaseManager.getConnection();
