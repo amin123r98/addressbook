@@ -2,7 +2,7 @@
 package com.example.addressbook.dao;
 
 import com.example.addressbook.model.Contact;
-import com.example.addressbook.util.DateUtil; // Создадим позже
+import com.example.addressbook.util.DateUtil;
 
 import java.sql.*;
 import java.time.LocalDate;
@@ -48,7 +48,77 @@ public class ContactDao {
         return Optional.empty();
     }
 
+    // --- Методы для пагинации и поиска ---
+
+    /**
+     * Получает список контактов для указанной страницы и с учетом поискового запроса.
+     * @param pageNumber Номер страницы (начиная с 0)
+     * @param pageSize Размер страницы
+     * @param searchTerm Строка для поиска по имени (может быть null или пустой)
+     * @return Список контактов
+     * @throws SQLException
+     */
+    public List<Contact> getContacts(int pageNumber, int pageSize, String searchTerm) throws SQLException {
+        List<Contact> contacts = new ArrayList<>();
+        StringBuilder sqlBuilder = new StringBuilder("SELECT * FROM contacts ");
+        List<Object> params = new ArrayList<>();
+
+        if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+            sqlBuilder.append("WHERE lower(firstName) LIKE lower(?) "); // Поиск без учета регистра
+            params.add("%" + searchTerm.trim() + "%");
+        }
+
+        sqlBuilder.append("ORDER BY firstName, lastName LIMIT ? OFFSET ?");
+        params.add(pageSize);
+        params.add(pageNumber * pageSize);
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sqlBuilder.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                pstmt.setObject(i + 1, params.get(i));
+            }
+
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                contacts.add(mapRowToContact(rs));
+            }
+        }
+        return contacts;
+    }
+
+    /**
+     * Получает общее количество контактов с учетом поискового запроса.
+     * @param searchTerm Строка для поиска по имени (может быть null или пустой)
+     * @return Общее количество контактов
+     * @throws SQLException
+     */
+    public int getTotalContactsCount(String searchTerm) throws SQLException {
+        StringBuilder sqlBuilder = new StringBuilder("SELECT COUNT(*) FROM contacts ");
+        List<Object> params = new ArrayList<>();
+
+        if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+            sqlBuilder.append("WHERE lower(firstName) LIKE lower(?)");
+            params.add("%" + searchTerm.trim() + "%");
+        }
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sqlBuilder.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                pstmt.setObject(i + 1, params.get(i));
+            }
+
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        }
+        return 0;
+    }
+
     // Начальная версия getAllContacts без пагинации, поиска и сортировки
+    // Оставляем его, если он где-то нужен, но для основного списка будем использовать getContacts
     public List<Contact> getAllContacts() throws SQLException {
         List<Contact> contacts = new ArrayList<>();
         String sql = "SELECT * FROM contacts ORDER BY firstName, lastName"; // Базовая сортировка
@@ -95,7 +165,6 @@ public class ContactDao {
         }
     }
 
-    // Вспомогательный метод для маппинга ResultSet -> Contact
     private Contact mapRowToContact(ResultSet rs) throws SQLException {
         return new Contact(
                 rs.getString("id"),

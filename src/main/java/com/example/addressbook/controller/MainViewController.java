@@ -7,8 +7,10 @@ import com.example.addressbook.service.ContactService;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.AnchorPane; // Используем AnchorPane как заглушку
 
 import java.sql.SQLException;
 import java.util.List;
@@ -34,54 +36,113 @@ public class MainViewController {
     private final ContactService contactService = new ContactService();
     private ObservableList<Contact> contactData = FXCollections.observableArrayList();
 
-    private MainApp mainApp; // Ссылка на главный класс приложения
+    private MainApp mainApp;
 
-    private static final int ITEMS_PER_PAGE = 20; // FR1.1.2
+    private static final int ITEMS_PER_PAGE = 20;
+    private String currentSearchTerm = "";
 
     public MainViewController() {
-        // Конструктор вызывается до FXML инициализации
+        // Конструктор
     }
 
     @FXML
     private void initialize() {
-        // Инициализация колонок таблицы
         firstNameColumn.setCellValueFactory(cellData -> cellData.getValue().firstNameProperty());
         lastNameColumn.setCellValueFactory(cellData -> cellData.getValue().lastNameProperty());
         phoneNumberColumn.setCellValueFactory(cellData -> cellData.getValue().phoneNumberProperty());
         emailColumn.setCellValueFactory(cellData -> cellData.getValue().emailProperty());
 
-        // Начальная загрузка данных
-        loadContactData();
+        contactTable.setItems(contactData);
 
-        // Настройка слушателя для выбора в таблице
         contactTable.getSelectionModel().selectedItemProperty().addListener(
                 (observable, oldValue, newValue) -> showContactDetails(newValue));
 
-        // По умолчанию кнопки редактирования/удаления неактивны
         updateButtonStates(null);
 
-        // TODO: Настройка пагинации
-        // pagination.setPageFactory(this::createPage);
-        // TODO: Настройка поиска
-        // searchField.textProperty().addListener((obs, oldVal, newVal) -> handleSearch());
+        pagination.setPageFactory(this::createPage);
 
-        // TODO: Настройка сортировки (пока только по умолчанию через клик по заголовку)
-        // TableView поддерживает сортировку "из коробки", если PropertyValueFactory используется.
-        // Для сложной серверной сортировки нужно будет переопределять.
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> {
+            currentSearchTerm = newVal;
+            if (pagination.getCurrentPageIndex() != 0) {
+                pagination.setCurrentPageIndex(0);
+            } else {
+                updatePaginationAndLoadData();
+            }
+        });
+
+        // Эта строка также гарантирует, что при первом запуске пагинация корректно инициализируется
+        // и вызывает createPage(0)
+        updatePaginationAndLoadData();
     }
 
     public void setMainApp(MainApp mainApp) {
         this.mainApp = mainApp;
-        // После установки mainApp, можно загрузить данные или обновить UI
-        loadContactData();
+        // Для Alert'ов
+        // Если primaryStage еще не показан при вызове initialize(),
+        // то mainApp может быть null, когда showError/showAlert вызываются из updatePaginationAndLoadData.
+        // Поэтому, если mainApp устанавливается здесь, можно еще раз обновить, если это необходимо
+        // или передавать primaryStage в showError/showAlert другим способом.
+        // В нашем случае, так как updatePaginationAndLoadData вызывается в конце initialize,
+        // а setMainApp вызывается из MainApp после загрузки контроллера,
+        // showError/showAlert в updatePaginationAndLoadData могут не иметь mainApp.getPrimaryStage().
+        // Лучше передавать Stage напрямую в Alert или убедиться, что mainApp установлен до первого показа Alert.
+        // Однако, для простоты, оставим как есть, но это потенциальное место для NullPointerException, если Alert показывается до setMainApp.
     }
 
-    private void loadContactData() {
+    private Node createPage(int pageIndex) {
+        // Загружаем данные для запрошенной страницы
+        loadContactDataForPage(pageIndex);
+        // Pagination требует, чтобы мы вернули Node, который будет "содержимым" страницы.
+        // Поскольку наш TableView уже является частью основного макета и не должен
+        // перемещаться или заменяться Pagination'ом, мы возвращаем
+        // простой, невидимый или пустой Node. Это говорит Pagination, что
+        // мы сами управляем отображением данных на основной сцене.
+        return new AnchorPane(); // Возвращаем "заглушку"
+    }
+
+    private void updatePaginationAndLoadData() {
+        try {
+            int totalCount = contactService.getTotalContactsCount(currentSearchTerm);
+            int pageCount = (totalCount + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE;
+            if (pageCount == 0) { // Если нет результатов, отображаем 1 пустую страницу
+                pageCount = 1;
+            }
+
+            // Сохраняем текущий индекс, если он допустим для нового количества страниц
+            int currentPageIdx = pagination.getCurrentPageIndex();
+            if (currentPageIdx >= pageCount) {
+                currentPageIdx = Math.max(0, pageCount - 1);
+            }
+
+            pagination.setPageCount(pageCount); // Устанавливаем новое количество страниц
+
+            // Если текущий индекс изменился из-за уменьшения pageCount,
+            // или если мы просто хотим обновить страницу, устанавливаем его.
+            // Это также вызовет createPage, если индекс действительно изменился.
+            // Если индекс не изменился, createPage не будет вызван автоматически из setCurrentPageIndex,
+            // поэтому мы вызываем loadContactDataForPage вручную.
+            if (pagination.getCurrentPageIndex() != currentPageIdx) {
+                pagination.setCurrentPageIndex(currentPageIdx);
+            } else {
+                // Если индекс не изменился (например, при поиске мы остались на первой странице,
+                // или pageCount не изменился так, чтобы текущий индекс стал невалидным),
+                // то createPage не будет вызван из setCurrentPageIndex.
+                // В этом случае нужно загрузить данные для текущей страницы вручную.
+                loadContactDataForPage(currentPageIdx);
+            }
+
+        } catch (SQLException e) {
+            showError("Ошибка подсчета контактов", "Не удалось получить общее количество контактов: " + e.getMessage());
+            pagination.setPageCount(1);
+            contactData.clear();
+        }
+    }
+
+    private void loadContactDataForPage(int pageIndex) {
         contactData.clear();
         try {
-            List<Contact> contacts = contactService.getAllContacts(); // Пока без пагинации
+            List<Contact> contacts = contactService.getContacts(pageIndex, ITEMS_PER_PAGE, currentSearchTerm);
             contactData.addAll(contacts);
-            contactTable.setItems(contactData);
         } catch (SQLException e) {
             showError("Ошибка загрузки контактов", "Не удалось загрузить данные из базы: " + e.getMessage());
         }
@@ -89,7 +150,6 @@ public class MainViewController {
 
     private void showContactDetails(Contact contact) {
         updateButtonStates(contact);
-        // В будущем здесь можно отображать детали в отдельной панели, если потребуется
     }
 
     private void updateButtonStates(Contact selectedContact) {
@@ -101,12 +161,12 @@ public class MainViewController {
 
     @FXML
     private void handleNewContact() {
-        Contact tempContact = new Contact(); // Пустой контакт для создания
+        Contact tempContact = new Contact();
         boolean saveClicked = mainApp.showContactEditDialog(tempContact, "Создать контакт");
         if (saveClicked) {
             try {
                 contactService.addContact(tempContact);
-                loadContactData(); // Обновить таблицу
+                updatePaginationAndLoadData();
                 showAlert(Alert.AlertType.INFORMATION, "Успех", "Контакт успешно создан.");
             } catch (SQLException e) {
                 showError("Ошибка создания контакта", "Не удалось сохранить контакт: " + e.getMessage());
@@ -122,14 +182,13 @@ public class MainViewController {
             if (saveClicked) {
                 try {
                     contactService.updateContact(selectedContact);
-                    loadContactData(); // Обновить таблицу
+                    updatePaginationAndLoadData();
                     showAlert(Alert.AlertType.INFORMATION, "Успех", "Контакт успешно обновлен.");
                 } catch (SQLException e) {
                     showError("Ошибка редактирования контакта", "Не удалось обновить контакт: " + e.getMessage());
                 }
             }
         } else {
-            // Этого не должно произойти, если кнопка задизейблена правильно
             showAlert(Alert.AlertType.WARNING, "Ничего не выбрано", "Пожалуйста, выберите контакт для редактирования.");
         }
     }
@@ -139,6 +198,7 @@ public class MainViewController {
         Contact selectedContact = contactTable.getSelectionModel().getSelectedItem();
         if (selectedContact != null) {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.initOwner(mainApp != null ? mainApp.getPrimaryStage() : null);
             alert.setTitle("Подтверждение удаления");
             alert.setHeaderText("Удалить контакт: " + selectedContact.getFirstName() + " " + (selectedContact.getLastName() != null ? selectedContact.getLastName() : ""));
             alert.setContentText("Вы уверены, что хотите удалить этот контакт?");
@@ -147,7 +207,7 @@ public class MainViewController {
             if (result.isPresent() && result.get() == ButtonType.OK) {
                 try {
                     contactService.deleteContact(selectedContact.getId());
-                    loadContactData(); // Обновить таблицу
+                    updatePaginationAndLoadData();
                     showAlert(Alert.AlertType.INFORMATION, "Успех", "Контакт успешно удален.");
                 } catch (SQLException e) {
                     showError("Ошибка удаления контакта", "Не удалось удалить контакт: " + e.getMessage());
@@ -168,11 +228,11 @@ public class MainViewController {
         }
     }
 
-    // TODO: handleSearch()
-    // TODO: createPage(int pageIndex) для пагинации
-
     private void showError(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
+        if (mainApp != null && mainApp.getPrimaryStage() != null) { // Проверка на null
+            alert.initOwner(mainApp.getPrimaryStage());
+        }
         alert.setTitle("Ошибка");
         alert.setHeaderText(title);
         alert.setContentText(message);
@@ -181,6 +241,9 @@ public class MainViewController {
 
     private void showAlert(Alert.AlertType alertType, String title, String message) {
         Alert alert = new Alert(alertType);
+        if (mainApp != null && mainApp.getPrimaryStage() != null) { // Проверка на null
+            alert.initOwner(mainApp.getPrimaryStage());
+        }
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);

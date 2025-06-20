@@ -1,0 +1,194 @@
+/* styles.css */
+
+/* --- Общие стили для всего окна --- */
+.root {
+    -fx-font-family: "Segoe UI", Arial, sans-serif; /* Более современный шрифт по умолчанию */
+    -fx-background-color: #f0f2f5; /* Светло-серый фон для всего приложения */
+    -fx-font-size: 13px; /* Немного увеличим базовый размер шрифта */
+}
+
+/* --- Стили для кнопок --- */
+.button {
+    -fx-background-color: #007bff; /* Яркий синий цвет */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 4px; /* Слегка скругленные углы */
+    -fx-padding: 6px 12px; /* Отступы внутри кнопки */
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 1, 1); /* Легкая тень */
+}
+
+.button:hover {
+    -fx-background-color: #0069d9; /* Чуть темнее при наведении */
+}
+
+.button:pressed {
+    -fx-background-color: #005cbf; /* Еще темнее при нажатии */
+}
+
+/* Отдельный стиль для кнопки "Удалить", если хотим сделать ее красной */
+#deleteContactButton { /* Используем fx:id как селектор */
+    -fx-background-color: #dc3545; /* Красный цвет */
+}
+#deleteContactButton:hover {
+    -fx-background-color: #c82333;
+}
+#deleteContactButton:pressed {
+    -fx-background-color: #bd2130;
+}
+
+
+/* --- Стили для ToolBar --- */
+.tool-bar {
+    -fx-background-color: #ffffff; /* Белый фон для панели инструментов */
+    -fx-padding: 8px 5px;
+    -fx-border-color: transparent transparent #dee2e6 transparent; /* Нижняя граница */
+    -fx-border-width: 1px;
+}
+
+/* --- Стили для полей ввода --- */
+.text-field, .text-area, .date-picker {
+    -fx-background-radius: 4px;
+    -fx-border-color: #ced4da;
+    -fx-border-radius: 4px;
+    -fx-border-width: 1px;
+    -fx-padding: 5px 8px;
+}
+
+.text-field:focused, .text-area:focused, .date-picker:focused {
+    -fx-border-color: #80bdff;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,123,255,0.25), 5, 0, 0, 0);
+}
+
+.date-picker > .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 6px;
+}
+.date-picker > .arrow-button > .arrow {
+    -fx-background-color: #495057;
+}
+
+
+/* --- Стили для TableView --- */
+.table-view {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #dee2e6;
+    -fx-border-width: 1px;
+    -fx-background-insets: 0;
+    -fx-padding: 0; /* Убираем внутренние отступы, если они есть по умолчанию */
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #e9ecef; /* Фон заголовков колонок */
+}
+
+.table-view .column-header, .table-view .filler {
+    -fx-background-color: transparent; /* Убираем стандартный фон, чтобы был виден фон .column-header-background */
+    -fx-border-color: transparent #dee2e6 transparent transparent; /* Правая граница для разделения колонок */
+    -fx-border-width: 1px;
+    -fx-padding: 8px 10px;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #212529; /* Темный текст для заголовков */
+    -fx-font-weight: bold;
+}
+
+.table-view .table-cell {
+    -fx-padding: 8px 10px; /* Отступы в ячейках */
+    -fx-border-color: transparent #e1e1e1 transparent transparent; /* Светлая правая граница для ячеек */
+    -fx-border-width: 1px;
+}
+
+/* Убираем лишнюю границу у последней видимой колонки */
+.table-view .column-header:last-visible,
+.table-view .table-cell:last-visible {
+    -fx-border-color: transparent;
+}
+
+
+.table-row-cell:odd {
+   -fx-background-color: #f8f9fa; /* Чередование строк (зебра) - нечетные */
+}
+.table-row-cell:even {
+   -fx-background-color: #ffffff; /* Чередование строк (зебра) - четные */
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #007bff; /* Цвет выделенной строки */
+    -fx-text-fill: white; /* Цвет текста в выделенной строке */
+}
+
+.table-row-cell:selected .table-cell .label { /* Если текст внутри Label в ячейке */
+    -fx-text-fill: white;
+}
+.table-row-cell:selected .text { /* Если текст напрямую в ячейке */
+     -fx-fill: white; /* Для текста, не являющегося Label */
+}
+
+
+/* --- Стили для Pagination --- */
+.pagination > .pagination-control > .control-box { /* Контейнер с кнопками страниц и стрелками */
+    -fx-spacing: 2px;
+}
+
+.pagination .toggle-button { /* Кнопки страниц */
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #007bff;
+    -fx-border-color: #dee2e6;
+    -fx-border-width: 1px;
+    -fx-padding: 5px 10px;
+    -fx-background-radius: 3px;
+    -fx-border-radius: 3px;
+}
+
+.pagination .toggle-button:hover {
+    -fx-background-color: #e9ecef;
+}
+
+.pagination .toggle-button:selected {
+    -fx-background-color: #007bff;
+    -fx-text-fill: white;
+    -fx-border-color: #007bff;
+}
+
+.pagination > .pagination-control > .number- ακόμη { /* Троеточие "..." */
+    -fx-padding: 5px 0px;
+}
+
+.pagination .button { /* Кнопки "вперед" / "назад" (стрелки) */
+     -fx-background-color: #ffffff;
+     -fx-text-fill: #007bff;
+     -fx-border-color: #dee2e6;
+     -fx-border-width: 1px;
+     -fx-padding: 5px 8px;
+     -fx-background-radius: 3px;
+     -fx-border-radius: 3px;
+}
+.pagination .button:hover {
+     -fx-background-color: #e9ecef;
+}
+.pagination .button:disabled {
+    -fx-opacity: 0.6;
+}
+
+/* --- Стили для Label --- */
+.label {
+    -fx-text-fill: #212529; /* Темный цвет текста для большинства надписей */
+}
+
+/* Стили для диалогового окна ContactDialog */
+/* Чтобы стили применились к диалогу, его сцена также должна подключать этот CSS */
+/* Для простоты, если Dialog имеет свой fx:root, можно задать стиль ему */
+/* Если нет, то можно стилизовать его корневой AnchorPane через класс стиля */
+.contact-dialog-pane { /* Предположим, вы добавите этот класс стиля к корневому AnchorPane в ContactDialog.fxml */
+    -fx-background-color: #f8f9fa;
+}
+
+.contact-dialog-pane .label {
+    -fx-font-weight: bold;
+    -fx-padding: 0 0 0 5px; /* Немного отступа для заголовков полей */
+}
+
+.contact-dialog-pane .button-bar .button { /* Кнопки в ButtonBar диалога */
+    -fx-font-size: 13px;
+}

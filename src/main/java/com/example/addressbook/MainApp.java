@@ -5,7 +5,7 @@ import com.example.addressbook.controller.ContactDialogController;
 import com.example.addressbook.controller.MainViewController;
 import com.example.addressbook.dao.DatabaseManager;
 import com.example.addressbook.model.Contact;
-import javafx.application.Application;
+import javafx.application.Application; // Убедитесь, что этот импорт есть
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
@@ -20,68 +20,43 @@ import java.io.InputStream;
 public class MainApp extends Application {
 
     private Stage primaryStage;
-    private BorderPane rootLayout;
 
     @Override
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
         this.primaryStage.setTitle("AddressBook App");
 
-        // Установка иконки приложения (опционально)
-        try (InputStream iconStream = MainApp.class.getResourceAsStream("/com/example/addressbook/icons/address_book_icon.png")) {
-            if (iconStream != null) {
-                this.primaryStage.getIcons().add(new Image(iconStream));
-            } else {
-                System.err.println("Иконка не найдена. Убедитесь, что /com/example/addressbook/icons/address_book_icon.png существует в ресурсах.");
-            }
-        } catch (Exception e) {
-            System.err.println("Ошибка загрузки иконки: " + e.getMessage());
-        }
+        // ... загрузка иконки ...
 
-
-        // Инициализация базы данных
         DatabaseManager.initializeDatabase();
-
-        initRootLayout();
+        // initRootLayout(); // Можно убрать, если primaryStage.show() только в showMainView
         showMainView();
     }
 
-    /**
-     * Инициализирует корневой макет.
-     */
-    public void initRootLayout() {
-        try {
-            // Загружаем корневой макет из fxml файла.
-            // В данном примере у нас нет отдельного RootLayout.fxml,
-            // MainView.fxml будет основным. Если бы был, код был бы таким:
-            // FXMLLoader loader = new FXMLLoader();
-            // loader.setLocation(MainApp.class.getResource("fxml/RootLayout.fxml"));
-            // rootLayout = (BorderPane) loader.load();
-            // Scene scene = new Scene(rootLayout);
-            // primaryStage.setScene(scene);
+    // initRootLayout() можно удалить, если он пуст или делает только show()
 
-            // Пока просто создаем сцену и показываем
-            primaryStage.show();
-
-        } catch (Exception e) { // Заменил IOException на Exception, так как FXMLLoader.load() может кидать его, но тут мы его не используем пока
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Показывает основное окно приложения.
-     */
     public void showMainView() {
         try {
             FXMLLoader loader = new FXMLLoader();
+            // Путь к FXML остается прежним, так как он в пакетной структуре
             loader.setLocation(MainApp.class.getResource("fxml/MainView.fxml"));
-            BorderPane mainView = (BorderPane) loader.load(); // Используем BorderPane как корневой элемент MainView
+            BorderPane mainView = (BorderPane) loader.load();
 
-            // Даём контроллеру доступ к главному приложению.
             MainViewController controller = loader.getController();
             controller.setMainApp(this);
 
             Scene scene = new Scene(mainView);
+
+            // --- ПОДКЛЮЧАЕМ СТИЛИ (НОВЫЙ ПУТЬ) ---
+            try {
+                String cssPath = MainApp.class.getResource("/css/styles.css").toExternalForm(); // ИЗМЕНЕН ПУТЬ
+                scene.getStylesheets().add(cssPath);
+            } catch (NullPointerException e) {
+                System.err.println("Не удалось загрузить CSS файл: styles.css. Убедитесь, что он находится в src/main/resources/css/");
+                e.printStackTrace();
+            }
+            // --- КОНЕЦ ПОДКЛЮЧЕНИЯ СТИЛЕЙ ---
+
             primaryStage.setScene(scene);
             primaryStage.show();
 
@@ -90,38 +65,34 @@ public class MainApp extends Application {
         }
     }
 
-    /**
-     * Открывает диалоговое окно для редактирования деталей указанного контакта.
-     * Если пользователь нажимает OK, изменения сохраняются в предоставленном объекте контакта
-     * и возвращается true.
-     *
-     * @param contact объект контакта, который должен быть отредактирован
-     * @param title Заголовок окна
-     * @return true, если пользователь нажал OK, иначе false.
-     */
     public boolean showContactEditDialog(Contact contact, String title) {
         try {
             FXMLLoader loader = new FXMLLoader();
             loader.setLocation(MainApp.class.getResource("fxml/ContactDialog.fxml"));
             AnchorPane page = (AnchorPane) loader.load();
 
+            Scene dialogScene = new Scene(page);
+            // --- ПОДКЛЮЧАЕМ СТИЛИ К ДИАЛОГУ (НОВЫЙ ПУТЬ) ---
+            try {
+                String cssPath = MainApp.class.getResource("/css/styles.css").toExternalForm(); // ИЗМЕНЕН ПУТЬ
+                dialogScene.getStylesheets().add(cssPath);
+            } catch (NullPointerException e) {
+                System.err.println("Не удалось загрузить CSS для диалога: styles.css.");
+            }
+            // --- КОНЕЦ ПОДКЛЮЧЕНИЯ СТИЛЕЙ К ДИАЛОГУ ---
+
             Stage dialogStage = new Stage();
             dialogStage.setTitle(title);
             dialogStage.initModality(Modality.WINDOW_MODAL);
             dialogStage.initOwner(primaryStage);
-            Scene scene = new Scene(page);
-            dialogStage.setScene(scene);
-            try (InputStream iconStream = MainApp.class.getResourceAsStream("/com/example/addressbook/icons/address_book_icon.png")) {
-                if (iconStream != null) {
-                    dialogStage.getIcons().add(new Image(iconStream));
-                }
-            }
+            dialogStage.setScene(dialogScene);
 
+            // ... загрузка иконки диалога ...
 
             ContactDialogController controller = loader.getController();
             controller.setDialogStage(dialogStage);
             controller.setContact(contact);
-            controller.setReadOnlyMode(false); // Убедимся, что это режим редактирования
+            controller.setReadOnlyMode(false);
 
             dialogStage.showAndWait();
 
@@ -132,33 +103,34 @@ public class MainApp extends Application {
         }
     }
 
-    /**
-     * Открывает диалоговое окно для просмотра деталей указанного контакта.
-     * @param contact объект контакта для просмотра
-     */
     public void showContactViewDialog(Contact contact) {
         try {
             FXMLLoader loader = new FXMLLoader();
             loader.setLocation(MainApp.class.getResource("fxml/ContactDialog.fxml"));
             AnchorPane page = (AnchorPane) loader.load();
 
+            Scene dialogScene = new Scene(page);
+            // --- ПОДКЛЮЧАЕМ СТИЛИ К ДИАЛОГУ (НОВЫЙ ПУТЬ) ---
+            try {
+                String cssPath = MainApp.class.getResource("/css/styles.css").toExternalForm(); // ИЗМЕНЕН ПУТЬ
+                dialogScene.getStylesheets().add(cssPath);
+            } catch (NullPointerException e) {
+                System.err.println("Не удалось загрузить CSS для диалога просмотра: styles.css.");
+            }
+            // --- КОНЕЦ ПОДКЛЮЧЕНИЯ СТИЛЕЙ К ДИАЛОГУ ---
+
             Stage dialogStage = new Stage();
-            dialogStage.setTitle("Просмотр контакта"); // Заголовок по умолчанию
+            dialogStage.setTitle("Просмотр контакта");
             dialogStage.initModality(Modality.WINDOW_MODAL);
             dialogStage.initOwner(primaryStage);
-            Scene scene = new Scene(page);
-            dialogStage.setScene(scene);
-            try (InputStream iconStream = MainApp.class.getResourceAsStream("/com/example/addressbook/icons/address_book_icon.png")) {
-                if (iconStream != null) {
-                    dialogStage.getIcons().add(new Image(iconStream));
-                }
-            }
+            dialogStage.setScene(dialogScene);
 
+            // ... загрузка иконки диалога ...
 
             ContactDialogController controller = loader.getController();
             controller.setDialogStage(dialogStage);
             controller.setContact(contact);
-            controller.setReadOnlyMode(true); // Устанавливаем режим "только чтение"
+            controller.setReadOnlyMode(true);
 
             dialogStage.showAndWait();
 
@@ -166,7 +138,6 @@ public class MainApp extends Application {
             e.printStackTrace();
         }
     }
-
 
     public Stage getPrimaryStage() {
         return primaryStage;

@@ -14,18 +14,31 @@
 
 <BorderPane prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.addressbook.controller.MainViewController">
     <top>
-        <VBox>
-            <ToolBar BorderPane.alignment="CENTER">
-                <Button fx:id="newContactButton" mnemonicParsing="false" onAction="#handleNewContact" text="Создать контакт" />
-                <Button fx:id="editContactButton" mnemonicParsing="false" onAction="#handleEditContact" text="Редактировать" />
-                <Button fx:id="deleteContactButton" mnemonicParsing="false" onAction="#handleDeleteContact" text="Удалить" />
-                <Button fx:id="viewContactButton" mnemonicParsing="false" onAction="#handleViewContact" text="Просмотр" />
-            </ToolBar>
-            <HBox alignment="CENTER_LEFT" spacing="10.0" style="-fx-padding: 5 10 5 10;">
-                <Label text="Поиск:" />
-                <TextField fx:id="searchField" HBox.hgrow="ALWAYS" promptText="Имя, Фамилия, Телефон, Email, Компания..." />
-                <!-- Место для фильтров, например ComboBox -->
-            </HBox>
+        <VBox spacing="5.0"> <!-- 1. Устанавливаем небольшой вертикальный отступ между ToolBar и HBox -->
+            <children>
+                <ToolBar> <!-- ToolBar обычно не требует явных отступов, он подстраивается под содержимое -->
+                    <items>
+                        <Button fx:id="newContactButton" mnemonicParsing="false" onAction="#handleNewContact" text="Создать контакт" />
+                        <Button fx:id="editContactButton" mnemonicParsing="false" onAction="#handleEditContact" text="Редактировать" />
+                        <Button fx:id="deleteContactButton" mnemonicParsing="false" onAction="#handleDeleteContact" text="Удалить" />
+                        <Button fx:id="viewContactButton" mnemonicParsing="false" onAction="#handleViewContact" text="Просмотр" />
+                    </items>
+                </ToolBar>
+                <HBox alignment="CENTER_LEFT" spacing="10.0" style="-fx-padding: 5 0 5 0;"> <!-- 2. Уменьшаем padding у HBox, особенно слева/справа если не нужно -->
+                    <!--    Можно убрать style вообще, если не нужны специфичные отступы -->
+                    <children>
+                        <Label text="Поиск по имени:">
+                            <HBox.margin>
+                                <Insets left="5.0" /> <!-- 3. Небольшой отступ слева для Label, если нужно -->
+                            </HBox.margin>
+                        </Label>
+                        <TextField fx:id="searchField" HBox.hgrow="ALWAYS" promptText="Введите имя..." />
+                    </children>
+                    <VBox.margin>
+                        <Insets left="5.0" right="5.0" /> <!-- 4. Отступы для всего HBox внутри VBox (слева/справа) -->
+                    </VBox.margin>
+                </HBox>
+            </children>
         </VBox>
     </top>
     <center>
@@ -35,17 +48,25 @@
                 <TableColumn fx:id="lastNameColumn" prefWidth="150.0" text="Фамилия" />
                 <TableColumn fx:id="phoneNumberColumn" prefWidth="120.0" text="Телефон" />
                 <TableColumn fx:id="emailColumn" prefWidth="200.0" text="Email" />
-                <!-- Дополнительные колонки можно добавить здесь или сделать настраиваемыми -->
             </columns>
             <columnResizePolicy>
                 <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
             </columnResizePolicy>
+            <!-- 5. Убираем или уменьшаем margin у TableView, если он есть и создает лишнее пространство -->
+            <!-- <BorderPane.margin>
+                <Insets top="5.0" />
+            </BorderPane.margin> -->
         </TableView>
     </center>
     <bottom>
-        <Pagination fx:id="pagination" BorderPane.alignment="CENTER" />
+        <Pagination fx:id="pagination" BorderPane.alignment="CENTER">
+            <BorderPane.margin>
+                <Insets top="5.0" /> <!-- 6. Небольшой отступ сверху для Pagination -->
+            </BorderPane.margin>
+        </Pagination>
     </bottom>
+    <!-- 7. Уменьшаем общий padding для BorderPane, если он слишком большой -->
     <padding>
-        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
     </padding>
 </BorderPane>

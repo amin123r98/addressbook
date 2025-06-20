@@ -23,10 +23,8 @@ public class ContactService {
     }
 
     public void addContact(Contact contact) throws SQLException {
-        // id, createdAt, updatedAt устанавливаются в конструкторе Contact
-        // но updatedAt можно обновить здесь еще раз на всякий случай
         contact.setUpdatedAt(LocalDateTime.now());
-        if (contact.getCreatedAt() == null) { // Если вдруг не установлен
+        if (contact.getCreatedAt() == null) {
             contact.setCreatedAt(LocalDateTime.now());
         }
         contactDao.addContact(contact);
@@ -36,21 +34,27 @@ public class ContactService {
         return contactDao.getContactById(id);
     }
 
+    // Используется для основного отображения с пагинацией и поиском
+    public List<Contact> getContacts(int pageNumber, int pageSize, String searchTerm) throws SQLException {
+        return contactDao.getContacts(pageNumber, pageSize, searchTerm);
+    }
+
+    // Для получения общего числа контактов с учетом поиска
+    public int getTotalContactsCount(String searchTerm) throws SQLException {
+        return contactDao.getTotalContactsCount(searchTerm);
+    }
+
+    // Старый метод, если где-то еще используется без пагинации/поиска
     public List<Contact> getAllContacts() throws SQLException {
-        return contactDao.getAllContacts(); // Пока без параметров
+        return contactDao.getAllContacts();
     }
 
     public void updateContact(Contact contact) throws SQLException {
-        contact.setUpdatedAt(LocalDateTime.now()); // Обновляем дату изменения
+        contact.setUpdatedAt(LocalDateTime.now());
         contactDao.updateContact(contact);
     }
 
     public void deleteContact(String id) throws SQLException {
         contactDao.deleteContact(id);
     }
-
-    // Методы для пагинации, поиска и сортировки будут добавлены позже
-    // Например:
-    // public List<Contact> getContacts(int pageNumber, int pageSize, String searchTerm, String sortBy, String filterBy)
-    // public int getTotalContactsCount(String searchTerm, String filterBy)
 }
