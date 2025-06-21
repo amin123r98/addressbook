@@ -151,8 +151,9 @@
     -fx-border-color: #007bff;
 }
 
-.pagination > .pagination-control > .number- ακόμη { /* Троеточие "..." */
-    -fx-padding: 5px 0px;
+/* --- Стили для Pagination --- */
+.pagination > .pagination-control > .control-box { /* Контейнер с кнопками страниц и стрелками */
+    -fx-spacing: 2px;
 }
 
 .pagination .button { /* Кнопки "вперед" / "назад" (стрелки) */

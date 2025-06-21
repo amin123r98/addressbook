@@ -9,37 +9,50 @@ import java.sql.Statement;
 
 public class DatabaseManager {
 
-    // Имя файла БД
     private static final String DB_FILE_NAME = "addressbook.db";
-    // URL для JDBC
-    private static String DB_URL;
+    private static String DB_URL; // Убрали final
 
     static {
         try {
-            // Определяем абсолютный путь к файлу БД.
-            // При запуске из IDE или `mvn javafx:run` это будет корень проекта.
-            // При запуске из JAR это будет директория, где лежит JAR.
-            String dbFilePath = Paths.get(DB_FILE_NAME).toAbsolutePath().toString();
-            DB_URL = "jdbc:sqlite:" + dbFilePath;
-            System.out.println("Database URL set to: " + DB_URL);
+            // Позволяем переопределить URL через системное свойство для тестов
+            String testDbUrl = System.getProperty("db.url.test");
+            if (testDbUrl != null && !testDbUrl.isEmpty()) {
+                DB_URL = testDbUrl;
+                System.out.println("Using test database URL: " + DB_URL);
+            } else {
+                String dbFilePath = Paths.get(DB_FILE_NAME).toAbsolutePath().toString();
+                DB_URL = "jdbc:sqlite:" + dbFilePath;
+                System.out.println("Database URL set to: " + DB_URL);
+            }
 
-            // Убедимся, что драйвер загружен (для некоторых старых систем или конфигураций)
             Class.forName("org.sqlite.JDBC");
 
         } catch (Exception e) {
             System.err.println("Could not determine database path or load driver: " + e.getMessage());
             e.printStackTrace();
-            // Аварийный вариант, если что-то пошло не так - попытаться создать в текущей директории
-            DB_URL = "jdbc:sqlite:" + DB_FILE_NAME;
+            DB_URL = "jdbc:sqlite:" + DB_FILE_NAME; // Fallback
         }
     }
 
     public static Connection getConnection() throws SQLException {
+        if (DB_URL == null) {
+            // Этого не должно произойти, если статический блок отработал
+            throw new SQLException("Database URL is not initialized.");
+        }
         return DriverManager.getConnection(DB_URL);
     }
 
     public static void initializeDatabase() {
-        try (Connection conn = getConnection();
+        // Перед инициализацией убедимся, что URL установлен (например, в тестах)
+        if (DB_URL == null && System.getProperty("db.url.test") != null) {
+            // Попытка повторной инициализации DB_URL, если тесты его задают, а статический блок еще не отработал
+            // Это немного костыльно, лучше чтобы тесты устанавливали свойство ДО первого обращения к DatabaseManager
+            String testDbUrl = System.getProperty("db.url.test");
+            DB_URL = testDbUrl;
+            System.out.println("Re-initialized test database URL for initializeDatabase(): " + DB_URL);
+        }
+
+        try (Connection conn = getConnection(); // Теперь будет использовать правильный DB_URL
              Statement stmt = conn.createStatement()) {
 
             String sql = "CREATE TABLE IF NOT EXISTS contacts (" +
@@ -56,14 +69,19 @@ public class DatabaseManager {
                     "updatedAt TEXT NOT NULL" +
                     ");";
             stmt.execute(sql);
-            System.out.println("Database initialized (table 'contacts' checked/created).");
+            System.out.println("Database initialized (table 'contacts' checked/created) using URL: " + conn.getMetaData().getURL());
 
         } catch (SQLException e) {
             System.err.println("Error initializing database: " + e.getMessage());
             e.printStackTrace();
+            // Дополнительная информация об URL при ошибке
+            if (DB_URL != null) {
+                System.err.println("Failed with DB_URL: " + DB_URL);
+            }
         }
     }
 
+    // close метод остается без изменений
     public static void close(AutoCloseable resource) {
         if (resource != null) {
             try {

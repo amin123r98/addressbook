@@ -10,10 +10,16 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>11</maven.compiler.source> <!-- Используем Java 11 или выше -->
-		<maven.compiler.target>11</maven.compiler.target>
-		<javafx.version>17.0.10</javafx.version> <!-- Актуальная версия JavaFX -->
+		<java.version>11</java.version>
+		<javafx.version>17.0.10</javafx.version>
 		<junit.version>5.10.2</junit.version>
+		<mockito.version>5.11.0</mockito.version>
+		<sqlite.jdbc.version>3.45.3.0</sqlite.jdbc.version>
+		<maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
+		<javafx.maven.plugin.version>0.0.8</javafx.maven.plugin.version>
+		<maven.shade.plugin.version>3.5.2</maven.shade.plugin.version>
+		<maven.surefire.plugin.version>3.2.5</maven.surefire.plugin.version>
+		<jacoco.maven.plugin.version>0.8.12</jacoco.maven.plugin.version>
 	</properties>
 
 	<dependencies>
@@ -33,7 +39,7 @@
 		<dependency>
 			<groupId>org.xerial</groupId>
 			<artifactId>sqlite-jdbc</artifactId>
-			<version>3.45.1.0</version> <!-- Проверьте последнюю версию -->
+			<version>${sqlite.jdbc.version}</version>
 		</dependency>
 
 		<!-- JUnit 5 for testing -->
@@ -49,17 +55,24 @@
 			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
-		<!-- Mockito for mocking in tests (optional but recommended) -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-params</artifactId>
+			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Mockito for mocking in tests -->
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-core</artifactId>
-			<version>5.11.0</version>
+			<version>${mockito.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-junit-jupiter</artifactId>
-			<version>5.11.0</version>
+			<version>${mockito.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -69,20 +82,18 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.13.0</version>
+				<version>${maven.compiler.plugin.version}</version>
 				<configuration>
-					<source>${maven.compiler.source}</source>
-					<target>${maven.compiler.target}</target>
+					<release>${java.version}</release>
 				</configuration>
 			</plugin>
 			<!-- JavaFX Maven Plugin for running and packaging -->
 			<plugin>
 				<groupId>org.openjfx</groupId>
 				<artifactId>javafx-maven-plugin</artifactId>
-				<version>0.0.8</version>
+				<version>${javafx.maven.plugin.version}</version>
 				<executions>
 					<execution>
-						<!-- Default configuration for running with: mvn javafx:run -->
 						<id>default-cli</id>
 						<configuration>
 							<mainClass>com.example.addressbook.MainApp</mainClass>
@@ -94,7 +105,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
-				<version>3.5.2</version>
+				<version>${maven.shade.plugin.version}</version>
 				<executions>
 					<execution>
 						<phase>package</phase>
@@ -104,7 +115,7 @@
 						<configuration>
 							<transformers>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<mainClass>com.example.addressbook.Launcher</mainClass> <!-- Используем обертку -->
+									<mainClass>com.example.addressbook.Launcher</mainClass>
 								</transformer>
 							</transformers>
 							<filters>
@@ -121,10 +132,36 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- Surefire Plugin for running tests -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.2.5</version>
+				<version>${maven.surefire.plugin.version}</version>
+				<configuration>
+					<!-- ЭТА СТРОКА БЫЛА ДОБАВЛЕНА/ИЗМЕНЕНА -->
+					<argLine>${argLine}</argLine>
+				</configuration>
+			</plugin>
+			<!-- JaCoCo Plugin for test coverage -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.maven.plugin.version}</version>
+				<executions>
+					<execution>
+						<id>prepare-agent</id> <!-- Добавил id для ясности -->
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
